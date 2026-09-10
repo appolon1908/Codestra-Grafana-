@@ -3,6 +3,8 @@ name: Validate Codestra Grafana corporate control plane
 on:
   pull_request:
     paths:
+      - 'MONITORING-INTEGRATION.md'
+      - 'monitoring-integration.v1.json'
       - 'codestra/**'
       - 'scripts/generate_codestra_dashboards.py'
       - 'scripts/validate_codestra_observability.py'
@@ -12,6 +14,8 @@ on:
   push:
     branches: [development, test, staging, production, main]
     paths:
+      - 'MONITORING-INTEGRATION.md'
+      - 'monitoring-integration.v1.json'
       - 'codestra/**'
       - 'scripts/generate_codestra_dashboards.py'
       - 'scripts/validate_codestra_observability.py'
