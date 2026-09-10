@@ -35,7 +35,6 @@ ALLOWED_MEDIA_HOSTS = {
     "supe.codestra.media",
     "node.codestra.media",
     "cadv.codestra.media",
-    "pgex.codestra.media",
     "rdex.codestra.media",
     "blac.codestra.media",
     "allo.codestra.media",
@@ -133,6 +132,7 @@ REQUIRED_TITLES = {
     "Incident Triage — What broke, where, who is affected, what changed?",
     "Infrastructure Health",
     "Middleware Transactions",
+    "Operations Dashboard API",
     "Kong API Gateway",
     "Keycloak Authentication",
     "Odoo Health and Integration",
@@ -564,7 +564,7 @@ def validate_generated_dashboards(data: dict[str, Any]) -> None:
     files = sorted(DASHBOARDS.rglob("*.json"))
     expected = (
         2
-        + 15
+        + 16
         + len(data["businesses"])
         + sum(len(business["repositories"]) for business in data["businesses"])
     )
