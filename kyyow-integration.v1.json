@@ -14,10 +14,11 @@
   ],
   "outputs": [],
   "controls": [
-    "all data sources use read-only credentials",
-    "no application, provider, or Odoo write credentials",
-    "Keycloak roles map viewer, editor, and platform admin without tenant bypass",
-    "browser users never receive backend data-source credentials"
+    "provisioned data sources disable editing and managed alerts; runtime read-only credentials require separate verification",
+    "no application, provider, or Odoo write credentials are authorized",
+    "current Keycloak role mapping grants Viewer, Editor, or GrafanaAdmin in shared organization 1; it is not Kyyow tenant isolation",
+    "Kyyow tenant access remains disabled until server-side organization and data-source tenant authority is implemented and verified",
+    "backend data-source credentials stay on the server"
   ],
   "identity": {
     "authority": "appolon1908-hue/Keycloak",
