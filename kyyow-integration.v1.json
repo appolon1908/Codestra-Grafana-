@@ -10,7 +10,8 @@
   "inputs": [
     "prometheus:read",
     "loki:read",
-    "tempo:read"
+    "tempo:read",
+    "alertmanager:read"
   ],
   "outputs": [],
   "controls": [
