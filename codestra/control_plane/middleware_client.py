@@ -91,3 +91,6 @@ class MiddlewareClient:
         if integration_id:
             path += "/" + quote(integration_id, safe="")
         return self._get(path)
+
+    def secrets_health(self) -> dict:
+        return self._get("/v1/observability/secrets/health")

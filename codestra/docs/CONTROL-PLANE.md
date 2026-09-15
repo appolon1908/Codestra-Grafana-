@@ -27,6 +27,15 @@ Middleware's `/v1/observability/integrations[/{integration_id}]`. Note that
 `integration_id` (e.g. `backstage`, `sentry`, `wazuh`) is a distinct
 identifier from `service_id`; the catalog never conflates the two.
 
+`GET /platform/v1/observability/secrets/health` delegates to Middleware's
+`/v1/observability/secrets/health`, which proxies OpenBao's `/v1/sys/health`
+and returns only an allowlisted field subset (`initialized`, `sealed`,
+`standby`, `performance_standby`, `version`, `server_time_utc`). Grafana never
+talks to OpenBao directly and never receives or stores a raw OpenBao
+credential; this route has no local fallback and raises `MiddlewareUnavailable`
+when Middleware is not configured, matching the read-only/no-duplication rule
+applied everywhere else in this API.
+
 ## Staging-only end-to-end verification
 
 Automated unit tests (`tests/test_control_plane.py`) prove this repository's
@@ -62,6 +71,22 @@ This harness, with `MIDDLEWARE_REPO_PATH` pointing at a local checkout of
   `service_health`) and correct failure handling for an invalid bearer
   token and an unreachable Middleware host (both must surface as
   `MiddlewareUnavailable`, never a false success).
+- Exercises the OpenBao proxy contract (`secrets_health`) against a mocked
+  OpenBao upstream transport (real network calls to an actual OpenBao are
+  not possible from this environment), proving Middleware's real
+  `Backends.get()` URL/scheme validation and field-allowlist filtering — the
+  synthetic upstream response intentionally includes a non-allowlisted
+  `cluster_name` field to prove it is dropped before reaching Grafana.
+- Proves real idempotent-retry semantics against Middleware's actual
+  `Store.mutate()`: replaying the same `Idempotency-Key` with an identical
+  payload returns the same `operation_id`; replaying the same key with a
+  different payload returns a real HTTP 409 conflict, not a simulated one.
+- Proves real outage/recovery behavior: stops the running Middleware
+  `uvicorn` process, confirms `MiddlewareClient` raises
+  `MiddlewareUnavailable` (never a false success) while it is down, restarts
+  a fresh process against the same database, confirms reads succeed again,
+  and confirms the idempotency record survived the restart by replaying the
+  same idempotency key against the new process.
 
 For a container-based, more production-like variant, `docker-compose.staging.yml`
 builds Middleware's own unmodified `Dockerfile` against a real PostgreSQL

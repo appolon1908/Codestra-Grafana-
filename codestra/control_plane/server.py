@@ -197,6 +197,13 @@ class Catalog:
             return self.middleware.overview()
         return {"status": "healthy", "production_activation": False}
 
+    def secrets_health(self) -> dict[str, Any]:
+        # OpenBao is opaque to Grafana; there is no local fallback because
+        # Grafana never queries OpenBao directly (Middleware owns secrets).
+        if not self.middleware.configured:
+            raise MiddlewareUnavailable("Middleware URL and bearer token are required for secrets health")
+        return self.middleware.secrets_health()
+
     def onboard(self, service_id: str) -> dict[str, Any]:
         validation = self.validate(service_id)
         if not validation["valid"]:
@@ -278,6 +285,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, self.catalog.status(route[1]))
             if route == ["observability", "health"]:
                 return self._send(200, self.catalog.platform_health())
+            if route == ["observability", "secrets", "health"]:
+                return self._send(200, self.catalog.secrets_health())
             if route == ["observability", "readiness"]:
                 return self._send(200, {"status": "ready", "production_activation": False})
             if route == ["observability", "targets"]:

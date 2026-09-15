@@ -191,6 +191,7 @@ def run() -> None:
                 "platform.services.read",
                 "observability.health.read",
                 "observability.integrations.read",
+                "observability.secrets.health.read",
             ]
         )
         token = mint_token(scopes=all_scopes)
@@ -244,7 +245,29 @@ def run() -> None:
         app.dependency_overrides[get_session] = db_session
         app.dependency_overrides[load_config] = lambda: config
         app.dependency_overrides[load_github_secret] = lambda: secret_path.read_bytes().strip()
-        app.dependency_overrides[get_backends] = lambda: Backends(config, httpx.Client())
+
+        # Mocked transport for the openbao backend only: this repository has no
+        # real OpenBao to reach, so the harness proves Middleware's real
+        # Backends.get()/secrets_health route wiring (URL/scheme validation,
+        # accepted-status handling, field allowlist) with a synthetic upstream
+        # response, exactly like Middleware's own test suite does.
+        def mock_backend(request: "httpx.Request") -> "httpx.Response":
+            if request.url.host == "openbao.example.invalid" and request.url.path == "/v1/sys/health":
+                return httpx.Response(
+                    200,
+                    json={
+                        "initialized": True,
+                        "sealed": False,
+                        "standby": False,
+                        "performance_standby": False,
+                        "version": "2.0.0",
+                        "server_time_utc": int(time.time()),
+                        "cluster_name": "should-be-redacted-if-present",
+                    },
+                )
+            raise AssertionError(f"unexpected backend request: {request.url}")
+
+        app.dependency_overrides[get_backends] = lambda: Backends(config, httpx.MockTransport(mock_backend))
 
         port = _free_port()
         server, server_thread = _start_uvicorn(app, port)
@@ -274,6 +297,7 @@ def run() -> None:
         check("overview", client.overview)
         check("topology", client.topology)
         check("service_health(odoo)", lambda: client.service_health("odoo", "staging"))
+        check("secrets_health (OpenBao proxy)", client.secrets_health)
 
         # Negative case: unauthenticated / bad token must surface as a clean failure,
         # never a false success -- exercised through the real network path too.

@@ -37,7 +37,12 @@
   },
   "artifacts": {},
   "github": {"secret_file": "__GITHUB_SECRET_FILE__"},
-  "backends": {},
+  "backends": {
+    "openbao": {
+      "base_url": "https://openbao.example.invalid",
+      "private_network_http": false
+    }
+  },
   "queries": {},
   "probe_targets": {},
   "integrations": {}
