@@ -20,6 +20,7 @@ DATASOURCES = CODESTRA / "provisioning" / "datasources" / "codestra.yml"
 DASHBOARD_PROVISIONING = CODESTRA / "provisioning" / "dashboards" / "codestra.yml"
 RBAC = CODESTRA / "rbac-policy.json"
 RUNTIME = CODESTRA / "runtime.v1.json"
+BINDINGS = CODESTRA / "onboarding" / "grafana-bindings.v1.json"
 COMPOSE = CODESTRA / "deploy" / "compose.candidate.yaml"
 DOCKERFILE = CODESTRA / "deploy" / "Dockerfile"
 DASHBOARDS = CODESTRA / "dashboards"
@@ -376,6 +377,76 @@ def validate_dashboard_provisioning() -> None:
             fail(f"dashboard provider uses a non-immutable path: {provider.get('name')}")
 
 
+def validate_onboarding_bindings() -> None:
+    data = load_json(BINDINGS)
+    if data.get("schema_version") != 1:
+        fail("Grafana onboarding bindings schema_version must be 1")
+    if data.get("status") != "BINDINGS_PREPARED_NOT_DEPLOYED":
+        fail("Grafana onboarding bindings must remain prepared, not deployed")
+    if data.get("activation_enabled") is not False:
+        fail("Grafana onboarding bindings may not enable activation")
+    if data.get("owner") != "appolon1908-hue/Codestra-Grafana-":
+        fail("Grafana onboarding bindings owner mismatch")
+
+    expected = {
+        "middleware": {
+            "repository": "appolon1908-hue/Middleware-",
+            "dashboard_path": "codestra/dashboards/platform/middleware-transactions.json",
+            "dashboard_uid": "codestra-middleware-transactions",
+            "dashboard_title": "Middleware Transactions",
+            "selectors": {"codestra_business": "platform", "service": "middleware"},
+        },
+        "odoo": {
+            "repository": "appolon1908-hue/Odoo",
+            "dashboard_path": "codestra/dashboards/platform/odoo-integration.json",
+            "dashboard_uid": "codestra-odoo-integration",
+            "dashboard_title": "Odoo Health and Integration",
+            "selectors": {"codestra_business": "platform", "service": "odoo"},
+        },
+    }
+    bindings = data.get("bindings")
+    if not isinstance(bindings, list):
+        fail("Grafana onboarding bindings must be a list")
+    service_ids = [binding.get("service_id") for binding in bindings]
+    if set(service_ids) != set(expected) or len(service_ids) != len(set(service_ids)):
+        fail("Grafana onboarding bindings must contain exactly Middleware and Odoo")
+
+    dashboard_uids: list[str] = []
+    for binding in bindings:
+        service_id = binding.get("service_id")
+        contract = expected.get(service_id)
+        if contract is None:
+            fail(f"unexpected Grafana onboarding service: {service_id}")
+        dashboard = binding.get("dashboard", {})
+        actual = {
+            "repository": binding.get("repository"),
+            "dashboard_path": dashboard.get("path"),
+            "dashboard_uid": dashboard.get("uid"),
+            "dashboard_title": dashboard.get("title"),
+            "selectors": binding.get("selectors"),
+        }
+        if actual != contract:
+            fail(f"incomplete Grafana onboarding binding: {service_id}")
+        if dashboard.get("folder_uid") != "codestra-platform":
+            fail(f"onboarding dashboard must use the platform folder: {service_id}")
+        if set(binding.get("environments", [])) != {"staging", "production"}:
+            fail(f"onboarding environments mismatch: {service_id}")
+        if set(binding.get("signals", [])) != {"metrics", "logs", "alerts"}:
+            fail(f"onboarding signal coverage mismatch: {service_id}")
+        if not binding.get("dependencies"):
+            fail(f"onboarding dependencies are required: {service_id}")
+
+        dashboard_path = ROOT / dashboard["path"]
+        dashboard_document = load_json(dashboard_path)
+        if dashboard_document.get("uid") != dashboard["uid"]:
+            fail(f"dashboard UID mismatch: {service_id}")
+        if dashboard_document.get("title") != dashboard["title"]:
+            fail(f"dashboard title mismatch: {service_id}")
+        dashboard_uids.append(dashboard["uid"])
+    if len(dashboard_uids) != len(set(dashboard_uids)):
+        fail("duplicate onboarding dashboard UIDs")
+
+
 def validate_rbac() -> None:
     policy = load_json(RBAC)
     if policy.get("schema_version") != "2.0":
@@ -637,6 +708,7 @@ def main() -> None:
     validate_ini()
     validate_datasources()
     validate_dashboard_provisioning()
+    validate_onboarding_bindings()
     validate_rbac()
     validate_runtime()
     validate_packaging()

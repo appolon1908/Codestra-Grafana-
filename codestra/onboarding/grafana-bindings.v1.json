@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "status": "BINDINGS_PREPARED_NOT_DEPLOYED",
+  "activation_enabled": false,
+  "owner": "appolon1908-hue/Codestra-Grafana-",
+  "purpose": "Grafana dashboard bindings for the first application onboarding wave",
+  "bindings": [
+    {
+      "service_id": "middleware",
+      "repository": "appolon1908-hue/Middleware-",
+      "business": "platform",
+      "environments": [
+        "staging",
+        "production"
+      ],
+      "dashboard": {
+        "path": "codestra/dashboards/platform/middleware-transactions.json",
+        "uid": "codestra-middleware-transactions",
+        "title": "Middleware Transactions",
+        "folder_uid": "codestra-platform"
+      },
+      "selectors": {
+        "codestra_business": "platform",
+        "service": "middleware"
+      },
+      "signals": [
+        "metrics",
+        "logs",
+        "alerts"
+      ],
+      "dependencies": [
+        "postgres",
+        "redis",
+        "keycloak",
+        "caddy",
+        "kong"
+      ]
+    },
+    {
+      "service_id": "odoo",
+      "repository": "appolon1908-hue/Odoo",
+      "business": "platform",
+      "environments": [
+        "staging",
+        "production"
+      ],
+      "dashboard": {
+        "path": "codestra/dashboards/platform/odoo-integration.json",
+        "uid": "codestra-odoo-integration",
+        "title": "Odoo Health and Integration",
+        "folder_uid": "codestra-platform"
+      },
+      "selectors": {
+        "codestra_business": "platform",
+        "service": "odoo"
+      },
+      "signals": [
+        "metrics",
+        "logs",
+        "alerts"
+      ],
+      "dependencies": [
+        "middleware",
+        "postgres",
+        "redis",
+        "keycloak"
+      ]
+    }
+  ]
+}
