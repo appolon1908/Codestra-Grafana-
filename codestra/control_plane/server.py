@@ -207,12 +207,28 @@ class Catalog:
             "actions": ["read-only service manifest", "metrics target", "log mapping", "trace mapping", "dashboard binding"],
         }
 
-    def integration(self, service_id: str) -> dict[str, Any]:
+    def integrations_list(self) -> dict[str, Any]:
+        # Middleware's /v1/observability/integrations already returns every
+        # integration registered/observed for the caller's tenant in one call;
+        # it is keyed by integration_id, not by service_id, so it must never
+        # be driven by iterating over list_services().
         if self.middleware.configured:
-            return self.middleware.integrations(service_id)
-        service = self.get_service(service_id)
+            return self.middleware.integrations()
         return {
-            "service_id": service_id,
+            "integrations": [
+                self.integration(service_id)
+                for service_id in sorted(self._services)
+            ]
+        }
+
+    def integration(self, integration_id: str) -> dict[str, Any]:
+        # integration_id identifies a configured backend binding (e.g.
+        # "backstage", "sentry", "wazuh") and is distinct from service_id.
+        if self.middleware.configured:
+            return self.middleware.integrations(integration_id)
+        service = self.get_service(integration_id)
+        return {
+            "service_id": integration_id,
             "environment": "staging",
             "metrics": "configured" if service["observability"]["prometheus"] else "disabled",
             "logs": "configured" if service["observability"]["loki"] else "disabled",
@@ -269,7 +285,7 @@ class Handler(BaseHTTPRequestHandler):
             if len(route) == 3 and route[:2] == ["observability", "targets"]:
                 return self._send(200, self.catalog.get_service(route[2]))
             if route == ["observability", "integrations"]:
-                return self._send(200, {"integrations": [self.catalog.integration(item["id"]) for item in self.catalog.list_services()]})
+                return self._send(200, self.catalog.integrations_list())
             if len(route) == 3 and route[:2] == ["observability", "integrations"]:
                 return self._send(200, self.catalog.integration(route[2]))
             raise KeyError(self.path)

@@ -1,0 +1,75 @@
+version: "3.9"
+# Staging-only, production-like integration compose file.
+#
+# This spins up a real PostgreSQL instance and the real Middleware-
+# application (built from its own local, unmodified Dockerfile), with
+# Alembic migrations run through 0059_integrated_monitoring (and any later
+# revisions) before the app starts, on a real container network -- a genuine
+# network path, not an in-process mock.
+#
+# STATUS: this file is a reviewed reference/scaffold. It has not been
+# executed in this environment because no container runtime (Docker daemon)
+# was available here. Do not describe it as verified until it has actually
+# been run and its output captured. The proven, currently-executed staging
+# check is tests/e2e/staging_harness.py, which exercises the identical real
+# Middleware code (routes, auth, backends, store, Alembic migration 0059)
+# and a real RS256 bearer token over a real loopback HTTP server, without
+# requiring Docker.
+#
+# Requires a local checkout of appolon1908-hue/Middleware- as a sibling
+# directory (../Middleware-) or MIDDLEWARE_REPO_PATH override via .env, and
+# Middleware's Keycloak settings pointed at a real or synthetic issuer
+# reachable from the "staging" network (a synthetic JWKS issuer can be run
+# with `python tests/e2e/serve_jwks.py`, using the same RSA-keypair pattern
+# as tests/e2e/staging_harness.py).
+#
+# Usage once Docker is available:
+#   docker compose -f docker-compose.staging.yml up --build --abort-on-container-exit
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: codestra_middleware_staging
+      POSTGRES_USER: codestra
+      POSTGRES_PASSWORD: staging-only-not-a-real-secret
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codestra -d codestra_middleware_staging"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - staging
+
+  middleware:
+    build:
+      context: ${MIDDLEWARE_REPO_PATH:-../Middleware-}
+      target: test
+    command: >
+      sh -c "python -m alembic upgrade head &&
+             python -m app.entrypoints.integration_api"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://codestra:staging-only-not-a-real-secret@postgres:5432/codestra_middleware_staging
+      MONITORING_CONFIG_FILE: /staging/monitoring-config.json
+      KEYCLOAK_ISSUER: ${STAGING_KEYCLOAK_ISSUER:?set to a real or synthetic issuer URL}
+      KEYCLOAK_AUDIENCE: middleware-api
+      KEYCLOAK_JWKS_URL: ${STAGING_KEYCLOAK_JWKS_URL:?set to a reachable JWKS endpoint}
+      KEYCLOAK_AUTHORIZED_PARTIES: "operator,collector,browser-bff"
+      PORT: "8095"
+    volumes:
+      - ./codestra/staging/monitoring-config.compose.json:/staging/monitoring-config.json:ro
+      - ./codestra/staging/github-secret.staging:/staging/github-secret:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8095/health/ready', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - staging
+
+networks:
+  staging:
+    driver: bridge

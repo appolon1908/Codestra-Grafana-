@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "revision": "staging-harness-1",
+  "repositories": [
+    {
+      "repository": "appolon1908-hue/Middleware-",
+      "tenant": "codestra-platform",
+      "group": "platform"
+    },
+    {
+      "repository": "appolon1908-hue/Odoo",
+      "tenant": "codestra-platform",
+      "group": "platform"
+    }
+  ],
+  "services": {
+    "middleware": {
+      "tenant": "codestra-platform",
+      "repository": "appolon1908-hue/Middleware-",
+      "environments": ["staging", "production"],
+      "dependencies": [],
+      "required_signals": ["metrics", "logs", "traces"],
+      "observation_sources": {
+        "release-a": {"client": "collector", "environments": ["staging", "production"]}
+      }
+    },
+    "odoo": {
+      "tenant": "codestra-platform",
+      "repository": "appolon1908-hue/Odoo",
+      "environments": ["staging", "production"],
+      "dependencies": ["middleware"],
+      "required_signals": ["metrics", "logs", "traces"],
+      "observation_sources": {
+        "release-a": {"client": "collector", "environments": ["staging", "production"]}
+      }
+    }
+  },
+  "artifacts": {},
+  "github": {"secret_file": "/staging/github-secret"},
+  "backends": {},
+  "queries": {},
+  "probe_targets": {},
+  "integrations": {}
+}
