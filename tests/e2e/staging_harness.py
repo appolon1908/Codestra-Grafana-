@@ -169,12 +169,12 @@ def run() -> None:
         settings.keycloak_jwks_url = jwks_url
         settings.keycloak_authorized_parties = "operator,collector,browser-bff"
 
-        def mint_token(role: str = "platform_admin", scopes: str = "") -> str:
+        def mint_token(role: str = "platform_admin", scopes: str = "", client: str = "operator") -> str:
             now = datetime.now(UTC).timestamp()
             claims = {
                 "iss": issuer,
                 "aud": audience,
-                "azp": "operator",
+                "azp": client,
                 "sub": "staging-harness-subject",
                 "iat": int(now),
                 "exp": int(now) + 300,
@@ -194,6 +194,11 @@ def run() -> None:
             ]
         )
         token = mint_token(scopes=all_scopes)
+        collector_token = mint_token(
+            role="monitoring_collector",
+            scopes="telemetry.heartbeat.write",
+            client="collector",
+        )
 
         # --- Real PostgreSQL migration 0059_integrated_monitoring, or disposable SQLite ---
         database_url = os.getenv("MONITORING_TEST_DATABASE_URL") or (
@@ -286,6 +291,117 @@ def run() -> None:
             checks.append(("surfaces unreachable Middleware", False, "expected MiddlewareUnavailable, got success"))
         except MiddlewareUnavailable:
             checks.append(("surfaces unreachable Middleware", True, "connection failure surfaced as MiddlewareUnavailable"))
+
+        # --- Retry / idempotency evidence against Middleware's real Store.mutate() ---
+        # This exercises the actual (tenant, actor, operation, idempotency_key) unique
+        # constraint and digest-comparison replay logic in app/monitoring/store.py,
+        # not a simulation of it. A true retry resends the identical request body, so
+        # observed_at is fixed once and reused across every retry/replay below.
+        fixed_observed_at = datetime.now(UTC).isoformat()
+
+        def post_heartbeat(idempotency_key: str, signals: list[str], correlation_id: str = "harness-correlation-1") -> httpx.Response:
+            body = {
+                "service_id": "middleware",
+                "environment": "staging",
+                "source_deployment": "release-a",
+                "sequence": 1,
+                "observed_at": fixed_observed_at,
+                "signals": signals,
+            }
+            return httpx.post(
+                base_url + "/platform/v1/telemetry/heartbeats",
+                json=body,
+                headers={
+                    "Authorization": "Bearer " + collector_token,
+                    "Idempotency-Key": idempotency_key,
+                    "X-Correlation-ID": correlation_id,
+                },
+                timeout=10.0,
+            )
+
+        retry_key = "harness-retry-key-1"
+        first = post_heartbeat(retry_key, ["metrics", "logs"])
+        retried = post_heartbeat(retry_key, ["metrics", "logs"])
+        if first.status_code == 200 and retried.status_code == 200:
+            first_op = first.json()["data"].get("operation_id")
+            retried_op = retried.json()["data"].get("operation_id")
+            checks.append((
+                "idempotent retry returns identical stored result",
+                first_op is not None and first_op == retried_op,
+                f"operation_id first={first_op} retried={retried_op}",
+            ))
+        else:
+            checks.append((
+                "idempotent retry returns identical stored result",
+                False,
+                f"unexpected status: first={first.status_code} retried={retried.status_code} body={retried.text[:200]}",
+            ))
+
+        conflicting = post_heartbeat(retry_key, ["metrics", "logs", "traces"])
+        checks.append((
+            "reused idempotency key with different payload is rejected (409)",
+            conflicting.status_code == 409,
+            f"status={conflicting.status_code} body={conflicting.text[:200]}",
+        ))
+
+        # --- Recovery evidence: Middleware outage then restart, using the same DB ---
+        # Stop the real uvicorn server (simulating an outage) and confirm the client
+        # surfaces MiddlewareUnavailable, then restart a fresh server bound to the
+        # same database and confirm state (the recorded heartbeat/idempotency row)
+        # survived the restart and reads succeed again.
+        server.should_exit = True
+        server_thread.join(timeout=10)
+        outage_client = MiddlewareClient(base_url=base_url, token=token, timeout=2.0)
+        try:
+            outage_client.overview()
+            checks.append(("outage surfaces as MiddlewareUnavailable", False, "expected failure during outage, got success"))
+        except MiddlewareUnavailable:
+            checks.append(("outage surfaces as MiddlewareUnavailable", True, "confirmed unreachable during simulated outage"))
+
+        recovery_port = _free_port()
+        recovery_server, recovery_thread = _start_uvicorn(app, recovery_port)
+        stack.callback(lambda: setattr(recovery_server, "should_exit", True))
+        recovery_base_url = f"http://127.0.0.1:{recovery_port}"
+        recovery_client = MiddlewareClient(base_url=recovery_base_url, token=token, timeout=10.0)
+        check("recovery: overview reachable again after restart", recovery_client.overview)
+
+        # Replay the same idempotency key against the new (post-restart) server
+        # process, proving the idempotency row persisted in the database survives
+        # a process restart, not just an in-memory cache.
+        def post_heartbeat_to(target_base_url: str, idempotency_key: str, signals: list[str], correlation_id: str) -> httpx.Response:
+            body = {
+                "service_id": "middleware",
+                "environment": "staging",
+                "source_deployment": "release-a",
+                "sequence": 1,
+                "observed_at": fixed_observed_at,
+                "signals": signals,
+            }
+            return httpx.post(
+                target_base_url + "/platform/v1/telemetry/heartbeats",
+                json=body,
+                headers={
+                    "Authorization": "Bearer " + collector_token,
+                    "Idempotency-Key": idempotency_key,
+                    "X-Correlation-ID": correlation_id,
+                },
+                timeout=10.0,
+            )
+
+        post_restart_replay = post_heartbeat_to(recovery_base_url, retry_key, ["metrics", "logs"], "harness-correlation-3")
+        if post_restart_replay.status_code == 200:
+            post_restart_op = post_restart_replay.json()["data"].get("operation_id")
+            checks.append((
+                "idempotency row survives process restart (same DB)",
+                post_restart_op == first_op,
+                f"operation_id before={first_op} after-restart={post_restart_op}",
+            ))
+        else:
+            checks.append((
+                "idempotency row survives process restart (same DB)",
+                False,
+                f"unexpected status={post_restart_replay.status_code} body={post_restart_replay.text[:200]}",
+            ))
 
         print()
         print("STAGING-ONLY END-TO-END HARNESS RESULTS")
