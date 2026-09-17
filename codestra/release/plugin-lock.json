@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "plugins": [
+    {
+      "id": "yesoreyeram-infinity-datasource",
+      "version": "4.0.0",
+      "signature": "grafana-signed",
+      "platform": "linux-amd64",
+      "downloadUrl": "https://grafana.com/api/plugins/yesoreyeram-infinity-datasource/versions/4.0.0/download?os=linux&arch=amd64",
+      "sha256": "2ebce2b2937983651d64991e833e48294b8002581a105741ae3df967e329905d",
+      "purpose": "read-only datasource for the Middleware Observability API (incidents, service catalog, monitoring state)",
+      "grafanaDependency": ">=11.6.11-0 <12 || >=12.0.10-0 <12.1 || >=12.1.7-0 <12.2 || >=12.2.5-0"
+    }
+  ]
+}

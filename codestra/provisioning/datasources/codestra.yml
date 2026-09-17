@@ -11,6 +11,8 @@ deleteDatasources:
     orgId: 1
   - name: Codestra Alertmanager
     orgId: 1
+  - name: Codestra Middleware Observability
+    orgId: 1
 
 datasources:
   - name: Codestra Prometheus
@@ -108,3 +110,24 @@ datasources:
       implementation: prometheus
       handleGrafanaManagedAlerts: false
       tlsSkipVerify: false
+
+  # Middleware is the operational control plane: incidents, service catalog and
+  # monitoring state are read here through its private runtime. The bearer is
+  # the grafana-runtime OpenBao reference rendered to a file; it is never in
+  # source, never returned to a browser, and the datasource can reach nothing
+  # but the Middleware runtime.
+  - name: Codestra Middleware Observability
+    uid: codestra-middleware-observability
+    type: yesoreyeram-infinity-datasource
+    access: proxy
+    url: http://middleware-integration-api:8095
+    editable: false
+    jsonData:
+      auth_method: bearerToken
+      allowedHosts:
+        - http://middleware-integration-api:8095
+      oauthPassThru: false
+      tlsSkipVerify: false
+      timeoutInSeconds: 10
+    secureJsonData:
+      bearerToken: $__file{/run/secrets/grafana_middleware_observability_token}

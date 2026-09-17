@@ -81,7 +81,12 @@ EXPECTED_DATASOURCES = {
     "codestra-loki": ("loki", "http://loki-query:3100"),
     "codestra-tempo": ("tempo", "http://tempo:3200"),
     "codestra-alertmanager": ("alertmanager", "http://alertmanager:9093"),
+    "codestra-middleware-observability": ("yesoreyeram-infinity-datasource", "http://middleware-integration-api:8095"),
 }
+PLUGIN_LOCK = CODESTRA / "release" / "plugin-lock.json"
+SECRET_REFERENCES = CODESTRA / "secret-references.v1.json"
+SECRET_SCHEMA = CODESTRA / "contracts" / "secret-reference.v1.schema.json"
+SECRET_SCHEMA_PIN = CODESTRA / "contracts" / "secret-reference.v1.schema.sha256"
 EXPECTED_FOLDER_UIDS = {
     "codestra-executive",
     "codestra-incident",
@@ -343,6 +348,20 @@ def validate_datasources() -> None:
     if alertmanager.get("jsonData", {}).get("handleGrafanaManagedAlerts") is not False:
         fail("Alertmanager datasource must remain read-only")
 
+    middleware = by_uid["codestra-middleware-observability"]
+    middleware_json = middleware.get("jsonData", {})
+    if middleware_json.get("auth_method") != "bearerToken" or middleware_json.get("oauthPassThru") is not False:
+        fail("Middleware datasource must authenticate with the rendered bearer and never forward user tokens")
+    if middleware_json.get("allowedHosts") != ["http://middleware-integration-api:8095"]:
+        fail("Middleware datasource may reach only the private Middleware runtime")
+    secure = middleware.get("secureJsonData", {})
+    if set(secure) != {"bearerToken"} or secure["bearerToken"] != "$__file{/run/secrets/grafana_middleware_observability_token}":
+        fail("Middleware datasource bearer must be the OpenBao-rendered file expansion and nothing else")
+    for uid, source in by_uid.items():
+        for key, value in (source.get("secureJsonData") or {}).items():
+            if not str(value).startswith("$__file{/run/secrets/"):
+                fail(f"datasource {uid} secureJsonData.{key} must be a $__file{{/run/secrets/...}} expansion, never a value")
+
     serialized = DATASOURCES.read_text(encoding="utf-8")
     reject_fragments(
         serialized,
@@ -352,10 +371,74 @@ def validate_datasources() -> None:
             "https://temp.codestra.media",
             "https://aler.codestra.media",
             "basicAuthPassword",
-            "secureJsonData",
         ),
         "datasource provisioning",
     )
+    validate_plugin_lock()
+    validate_secret_references()
+
+
+def validate_plugin_lock() -> None:
+    lock = load_json(PLUGIN_LOCK)
+    plugins = {item.get("id"): item for item in lock.get("plugins", [])}
+    if set(plugins) != {"yesoreyeram-infinity-datasource"}:
+        fail("exactly one signed datasource plugin is admitted")
+    plugin = plugins["yesoreyeram-infinity-datasource"]
+    if not re.fullmatch(r"[0-9a-f]{64}", str(plugin.get("sha256", ""))) or plugin.get("signature") != "grafana-signed":
+        fail("plugin lock must pin a signed plugin by package digest")
+    dockerfile = DOCKERFILE.read_text(encoding="utf-8")
+    if plugin["sha256"] not in dockerfile or f"versions/{plugin['version']}/download" not in dockerfile or "sha256sum -c" not in dockerfile:
+        fail("Dockerfile must install the locked plugin version and verify its digest")
+    if "allow_loading_unsigned_plugins" in INI.read_text(encoding="utf-8"):
+        fail("unsigned plugins must never be loadable")
+
+
+def validate_secret_references() -> None:
+    import hashlib
+
+    forbidden = {"value", "password", "token", "private_key", "client_secret", "secret", "secret_value", "unseal_key", "recovery_key", "root_token"}
+    schema = load_json(SECRET_SCHEMA)
+    pin = SECRET_SCHEMA_PIN.read_text(encoding="utf-8").strip()
+    if hashlib.sha256(json.dumps(schema, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest() != pin:
+        fail("vendored secret-reference schema does not match its pin")
+    document = load_json(SECRET_REFERENCES)
+    if document.get("secretValuesIncluded") is not False or document.get("schemaSha256") != pin:
+        fail("secret references must declare no values and bind the pinned schema")
+    if document.get("authority", {}).get("workloadIdentity") != "grafana-runtime":
+        fail("Grafana reads OpenBao only as the grafana-runtime identity")
+
+    def walk(value: Any, trail: str) -> None:
+        if isinstance(value, dict):
+            for key, item in value.items():
+                if str(key).lower() in forbidden or str(key).lower().endswith(("_password", "_token", "_secret")):
+                    fail(f"secret reference carries a value-bearing key at {trail}.{key}")
+                walk(item, f"{trail}.{key}")
+        elif isinstance(value, list):
+            for index, item in enumerate(value):
+                walk(item, f"{trail}[{index}]")
+        elif isinstance(value, str) and value.startswith("hvs."):
+            fail(f"secret-shaped value at {trail}")
+
+    walk(document, "secret-references")
+    covered: set[str] = set()
+    environments: set[str] = set()
+    for index, reference in enumerate(document.get("references", [])):
+        for required in schema["required"]:
+            if required not in reference:
+                fail(f"references[{index}] missing {required}")
+        env = reference["environment"]
+        if not reference["secret_ref"].startswith(f"codestra/{env}/observability/grafana/") or reference["workload_identity"] != "grafana-runtime":
+            fail(f"references[{index}] must lie beneath the grafana-runtime prefix for {env}")
+        if reference.get("reference_uri") != "openbao://" + reference["secret_ref"]:
+            fail(f"references[{index}] reference_uri must equal openbao:// + secret_ref")
+        environments.add(env)
+        covered.update(reference.get("runtime_files", []))
+    if environments != {"staging", "production"}:
+        fail("secret references must cover exactly staging and production")
+    for text in (INI.read_text(encoding="utf-8"), DATASOURCES.read_text(encoding="utf-8")):
+        for path in sorted(set(re.findall(r"\$__file\{(/run/secrets/[A-Za-z0-9_.-]+)\}", text))):
+            if path not in covered:
+                fail(f"rendered secret file has no OpenBao reference: {path}")
 
 
 def validate_dashboard_provisioning() -> None:
@@ -553,7 +636,7 @@ def validate_generated_dashboards(data: dict[str, Any]) -> None:
     files = sorted(DASHBOARDS.rglob("*.json"))
     expected = (
         2
-        + 16
+        + 18
         + len(data["businesses"])
         + sum(len(business["repositories"]) for business in data["businesses"])
     )

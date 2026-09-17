@@ -649,6 +649,124 @@ def write(folder: str, filename: str, payload: dict[str, Any]) -> None:
     )
 
 
+
+MIDDLEWARE_UID = "codestra-middleware-observability"
+LOKI_UID_ = "codestra-loki"
+
+
+def infinity_table(panel_id: int, title: str, url: str, x: int, y: int, *, width: int = 24, height: int = 8, root_selector: str = "", columns: list[dict[str, str]] | None = None) -> dict[str, Any]:
+    """Read-only table over the Middleware Observability API (GET only, no mutation)."""
+    return {
+        "id": panel_id,
+        "title": title,
+        "type": "table",
+        "datasource": datasource(MIDDLEWARE_UID, "yesoreyeram-infinity-datasource"),
+        "targets": [
+            {
+                "refId": "A",
+                "datasource": datasource(MIDDLEWARE_UID, "yesoreyeram-infinity-datasource"),
+                "type": "json",
+                "source": "url",
+                "format": "table",
+                "parser": "backend",
+                "url": url,
+                "url_options": {"method": "GET", "data": "", "headers": [{"key": "X-Correlation-ID", "value": "grafana-${__dashboard.uid}"}]},
+                "root_selector": root_selector,
+                "columns": columns or [],
+            }
+        ],
+        "gridPos": {"h": height, "w": width, "x": x, "y": y},
+        "options": {"showHeader": True, "cellHeight": "sm"},
+        "fieldConfig": {"defaults": {}, "overrides": []},
+    }
+
+
+def loki_stat(panel_id: int, title: str, expr: str, x: int, y: int, *, width: int = 6) -> dict[str, Any]:
+    return {
+        "id": panel_id,
+        "title": title,
+        "type": "stat",
+        "datasource": datasource(LOKI_UID_, "loki"),
+        "targets": [log_target(expr)],
+        "gridPos": {"h": 6, "w": width, "x": x, "y": y},
+        "fieldConfig": {"defaults": {"unit": "short", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": None}, {"color": "red", "value": 1}]}}, "overrides": []},
+    }
+
+
+def openbao_dashboard() -> dict[str, Any]:
+    """Operational OpenBao status only: never a secret path, token, key or value."""
+    prom = 'job="codestra-openbao"'
+    panels = [
+        stat_panel(1, "OpenBao metrics reachability", f"up{{{prom}}}", 0, 0),
+        stat_panel(2, "Unsealed nodes", f"sum(vault_core_unsealed{{{prom}}})", 6, 0, thresholds=[{"color": "red", "value": None}, {"color": "green", "value": 1}]),
+        stat_panel(3, "Active leaders", f"sum(vault_core_active{{{prom}}})", 12, 0, thresholds=[{"color": "red", "value": None}, {"color": "green", "value": 1}]),
+        stat_panel(4, "Health probe (GET /v1/sys/health)", 'probe_success{job="blackbox",service="openbao-health"}', 18, 0, thresholds=[{"color": "red", "value": None}, {"color": "green", "value": 1}]),
+        time_series_panel(5, "Request rate", f"sum(rate(vault_core_handle_request_count{{{prom}}}[5m]))", 0, 6, unit="reqps"),
+        time_series_panel(6, "Request latency p95", f"histogram_quantile(0.95, sum by (le) (rate(vault_core_handle_request_bucket{{{prom}}}[5m])))", 12, 6, unit="ms"),
+        time_series_panel(7, "Audit device success and failure", f"sum(rate(vault_audit_log_request_count{{{prom}}}[5m])) or vector(0)", 0, 14, unit="ops"),
+        time_series_panel(8, "Audit failures", f"sum(increase(vault_audit_log_request_failure{{{prom}}}[5m])) + sum(increase(vault_audit_log_response_failure{{{prom}}}[5m]))", 12, 14, unit="short"),
+        time_series_panel(9, "Tokens and leases (counts only)", f"sum(vault_token_count{{{prom}}}) or sum(vault_expire_num_leases{{{prom}}})", 0, 22, unit="short"),
+        time_series_panel(10, "Storage latency p95", f"histogram_quantile(0.95, sum by (le) (rate(vault_raft_storage_get_bucket{{{prom}}}[5m])))", 12, 22, unit="ms"),
+        time_series_panel(11, "Process CPU and memory", f"rate(process_cpu_seconds_total{{{prom}}}[5m]) or process_resident_memory_bytes{{{prom}}}", 0, 30, unit="short"),
+        time_series_panel(12, "Filesystem and restarts", 'node_filesystem_avail_bytes{mountpoint="/openbao/data"} or increase(container_start_time_seconds{name=~"openbao.*"}[1h])', 12, 30, unit="short"),
+        loki_stat(13, "Authentication failures (audit, 5m)", 'sum(count_over_time({service="openbao", log_source="openbao-audit"} | json | __error__="" | type="response" | error!="" [5m]))', 0, 38),
+        loki_stat(14, "Policy denials (audit, 5m)", 'sum(count_over_time({service="openbao", log_source="openbao-audit"} | json | __error__="" | error=~"(?i).*permission denied.*" [5m]))', 6, 38),
+        loki_stat(15, "Root token activity (audit, 24h)", 'sum(count_over_time({service="openbao", log_source="openbao-audit"} |= "\\"policies\\":[\\"root\\"]" [24h]))', 12, 38),
+        loki_stat(16, "Policy mutations (audit, 24h)", 'sum(count_over_time({service="openbao", log_source="openbao-audit"} | json | __error__="" | request_path=~"sys/policies/(acl|rgp)/.+" [24h]))', 18, 38),
+    ]
+    return {
+        "uid": "codestra-openbao",
+        "title": "OpenBao Secrets Authority — Operational Status",
+        "tags": ["security", "openbao", "corporate", "Codestra"],
+        "timezone": "utc",
+        "schemaVersion": 39,
+        "version": 1,
+        "editable": False,
+        "graphTooltip": 1,
+        "time": {"from": "now-6h", "to": "now"},
+        "refresh": "30s",
+        "links": [],
+        "templating": {"list": [constant_variable("codestra_business", "Business", "platform")]},
+        "panels": panels,
+        "description": "Operational status of the Codestra OpenBao secrets authority: initialisation, seal, leadership, requests, audit device, tokens and leases as counts, storage, process and host. No panel queries a secret path, token value, unseal or recovery key.",
+    }
+
+
+def middleware_operations_dashboard() -> dict[str, Any]:
+    """Incidents, service catalog monitoring state and reconciliation, read from the Middleware control plane."""
+    panels = [
+        infinity_table(1, "Open incidents (Middleware durable incident authority)", "/v1/observability/incidents?status=open&limit=100", 0, 0, root_selector="items"),
+        infinity_table(2, "Service catalog — monitoring state", "/platform/v1/services", 0, 8, root_selector="items", columns=[
+            {"selector": "service_id", "text": "service", "type": "string"},
+            {"selector": "monitoring_state", "text": "monitoring_state", "type": "string"},
+            {"selector": "last_observed_at", "text": "last_observed_at", "type": "timestamp"},
+            {"selector": "last_certified_at", "text": "last_certified_at", "type": "timestamp"},
+            {"selector": "owner", "text": "owner", "type": "string"},
+        ]),
+        infinity_table(3, "Component reconciliation (desired vs observed)", "/platform/v1/sync/status?environment=production", 0, 16, root_selector="data"),
+        infinity_table(4, "Secret access health (references and lease metadata only)", "/v1/observability/secrets/health", 0, 24, root_selector="data", height=6),
+        stat_panel(5, "Incident events ingested (5m)", 'sum(increase(codestra_observability_incident_events_total{result="ingested"}[5m]))', 0, 30),
+        stat_panel(6, "Duplicate deliveries deduplicated (5m)", 'sum(increase(codestra_observability_incident_events_total{result="duplicate"}[5m]))', 6, 30, thresholds=[{"color": "green", "value": None}]),
+        stat_panel(7, "Monitoring-readonly scrape of Middleware", 'up{job="codestra-middleware-metrics"}', 12, 30, thresholds=[{"color": "red", "value": None}, {"color": "green", "value": 1}]),
+        stat_panel(8, "Alertmanager → Middleware notification failures (10m)", "sum(increase(alertmanager_notifications_failed_total[10m]))", 18, 30),
+    ]
+    return {
+        "uid": "codestra-middleware-operations",
+        "title": "Middleware Operational Control Plane — Incidents, Catalog and Reconciliation",
+        "tags": ["incident", "middleware", "catalog", "corporate", "Codestra"],
+        "timezone": "utc",
+        "schemaVersion": 39,
+        "version": 1,
+        "editable": False,
+        "graphTooltip": 1,
+        "time": {"from": "now-24h", "to": "now"},
+        "refresh": "1m",
+        "links": [],
+        "templating": {"list": [constant_variable("codestra_business", "Business", "platform")]},
+        "panels": panels,
+        "description": "Read-only views over the Middleware Observability API: durable incidents, service catalog monitoring state (registered, pending, synced, drifted, failed, unknown, certified), per-component reconciliation and secret-reference health. Grafana never mutates control-plane state.",
+    }
+
 def generate_special() -> None:
     write(
         "incident",
@@ -699,6 +817,8 @@ def generate_special() -> None:
             ),
         )
     write("api", "operations-dashboard-api.json", operations_dashboard_api())
+    write("security", "openbao.json", openbao_dashboard())
+    write("incident", "middleware-operations.json", middleware_operations_dashboard())
 
 
 def main() -> None:
