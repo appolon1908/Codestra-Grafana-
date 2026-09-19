@@ -68,6 +68,7 @@ jobs:
         run: |
           python scripts/validate_codestra_observability.py
           python scripts/validate_staging_observability.py
+          python scripts/validate_middleware_v3_dashboards.py
 
       - name: Render dedicated staging Grafana authority
         env:

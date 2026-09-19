@@ -1,0 +1,194 @@
+{
+  "schema_version": "1.0",
+  "contract_id": "middleware-v3-dashboards",
+  "lane": "E",
+  "status": "PREPARED_DISABLED",
+  "activation_enabled": false,
+  "provider_effects_enabled": false,
+  "purpose": "Grafana visualises Middleware V3 through the private Prometheus, Loki, Tempo and Middleware Observability datasources. Ten prepared dashboards cover the API, command kernel, workers, outbox, reconciliation, adapter health, dependency health, policy/safety denials, dead letters and incident state. They stay dark until V3_FINAL_SHA is pinned. Grafana never mutates control-plane state.",
+  "middleware": {
+    "repository": "appolon1908-hue/Middleware-",
+    "prep_base_sha": "22d023a9c65b0789a0f7ee6c28548753521a9eff",
+    "v3_final_sha": "PENDING",
+    "repin_required_after_v3_merge": true,
+    "v3_candidate_observed": {
+      "branch": "mission/middleware-v3-command-kernel-20260919",
+      "sha": "1acb2ae",
+      "authority": "informational only; unmerged, owned by the Middleware V3 session"
+    }
+  },
+  "datasources": {
+    "codestra-prometheus": {
+      "type": "prometheus",
+      "url": "http://prometheus:9090",
+      "role": "metrics (V3 kernel metrics scraped from the private Middleware /metrics)"
+    },
+    "codestra-loki": {
+      "type": "loki",
+      "url": "http://loki-query:3100",
+      "role": "logs (structured metadata drilldown by correlation_id / operation_id)"
+    },
+    "codestra-tempo": {
+      "type": "tempo",
+      "url": "http://tempo:3200",
+      "role": "traces (TraceQL by correlation.id; traces-to-logs and traces-to-metrics wired)"
+    },
+    "codestra-middleware-observability": {
+      "type": "yesoreyeram-infinity-datasource",
+      "url": "http://middleware-integration-api:8095",
+      "role": "read-only incident, catalog, sync and secret-health views; bearer from /run/secrets (grafana-runtime OpenBao reference), GET only"
+    }
+  },
+  "dashboards": [
+    {
+      "file": "codestra/dashboards-prepared/middleware-v3/adapter-health.json",
+      "uid": "mwv3-adapter-health",
+      "title": "Middleware V3 \u2014 Adapter Health",
+      "panels": 7,
+      "status": "PREPARED_DISABLED"
+    },
+    {
+      "file": "codestra/dashboards-prepared/middleware-v3/api.json",
+      "uid": "mwv3-middleware-api",
+      "title": "Middleware V3 \u2014 API",
+      "panels": 8,
+      "status": "PREPARED_DISABLED"
+    },
+    {
+      "file": "codestra/dashboards-prepared/middleware-v3/command-kernel.json",
+      "uid": "mwv3-command-kernel",
+      "title": "Middleware V3 \u2014 Command Kernel",
+      "panels": 9,
+      "status": "PREPARED_DISABLED"
+    },
+    {
+      "file": "codestra/dashboards-prepared/middleware-v3/dead-letters.json",
+      "uid": "mwv3-dead-letters",
+      "title": "Middleware V3 \u2014 Dead Letters",
+      "panels": 4,
+      "status": "PREPARED_DISABLED"
+    },
+    {
+      "file": "codestra/dashboards-prepared/middleware-v3/dependency-health.json",
+      "uid": "mwv3-dependency-health",
+      "title": "Middleware V3 \u2014 Dependency Health",
+      "panels": 5,
+      "status": "PREPARED_DISABLED"
+    },
+    {
+      "file": "codestra/dashboards-prepared/middleware-v3/incident-state.json",
+      "uid": "mwv3-incident-state",
+      "title": "Middleware V3 \u2014 Incident State",
+      "panels": 6,
+      "status": "PREPARED_DISABLED"
+    },
+    {
+      "file": "codestra/dashboards-prepared/middleware-v3/outbox.json",
+      "uid": "mwv3-outbox",
+      "title": "Middleware V3 \u2014 Outbox",
+      "panels": 6,
+      "status": "PREPARED_DISABLED"
+    },
+    {
+      "file": "codestra/dashboards-prepared/middleware-v3/policy-safety.json",
+      "uid": "mwv3-policy-safety-denies",
+      "title": "Middleware V3 \u2014 Policy and Safety Denies",
+      "panels": 5,
+      "status": "PREPARED_DISABLED"
+    },
+    {
+      "file": "codestra/dashboards-prepared/middleware-v3/reconciliation.json",
+      "uid": "mwv3-reconciliation",
+      "title": "Middleware V3 \u2014 Reconciliation",
+      "panels": 5,
+      "status": "PREPARED_DISABLED"
+    },
+    {
+      "file": "codestra/dashboards-prepared/middleware-v3/workers.json",
+      "uid": "mwv3-workers",
+      "title": "Middleware V3 \u2014 Workers",
+      "panels": 6,
+      "status": "PREPARED_DISABLED"
+    }
+  ],
+  "darkness": {
+    "generator": "scripts/generate_middleware_v3_dashboards.py",
+    "folder": "codestra/dashboards-prepared/middleware-v3",
+    "provisioned": false,
+    "mounted": false,
+    "why": "codestra/provisioning/dashboards/codestra.yml providers read only /etc/grafana/codestra-dashboards/<folder>; the prepared folder is not mounted by any compose file",
+    "activation_steps": [
+      "Re-pin middleware.v3_final_sha; confirm every metric name and label set against the frozen V3 tree",
+      "git mv codestra/dashboards-prepared/middleware-v3/*.json into codestra/dashboards/platform (incident-state into codestra/dashboards/incident) and fold the builders into scripts/generate_codestra_dashboards.py",
+      "Raise the fixed dashboard count in scripts/validate_codestra_observability.py (2 + 18 -> +10) and extend REQUIRED_TITLES",
+      "Run scripts/validate_codestra_observability.py and the staging observability validator"
+    ]
+  },
+  "query_policy": {
+    "metrics": "only V3 candidate names (middleware_*) and prep-base names (codestra_http_*, codestra_auth_denials_total, codestra_readiness, codestra_observability_incident_events_total, up)",
+    "aggregation_labels_allowed": [
+      "service",
+      "environment",
+      "adapter",
+      "command_family",
+      "state",
+      "result",
+      "stage",
+      "reason",
+      "mode",
+      "operation",
+      "dependency",
+      "le",
+      "status",
+      "method"
+    ],
+    "forbidden_query_tokens": [
+      "tenant_id=",
+      "customer_id=",
+      "account_id=",
+      "user_id=",
+      "command_id=",
+      "operation_id=",
+      "correlation_id=",
+      "email=",
+      "phone="
+    ],
+    "middleware_reads": [
+      "GET /v1/observability/incidents?state=...",
+      "GET /platform/v1/sync/status",
+      "GET /platform/v1/services",
+      "GET /v1/observability/secrets/health"
+    ],
+    "mutation_panels": "none; provisioned dashboards are read-only"
+  },
+  "sso_audit": {
+    "scope": "codestra/config/grafana.ini [auth], [auth.generic_oauth], [auth.anonymous], [auth.basic], [security]; codestra/rbac-policy.json",
+    "observed": {
+      "generic_oauth_enabled": true,
+      "client_id": "grafana-observability",
+      "client_secret_from_file": true,
+      "pkce": true,
+      "role_attribute_strict": true,
+      "login_form_disabled": true,
+      "anonymous_disabled": true,
+      "basic_auth_disabled": true,
+      "issuer_realm": "https://auth.codestra.co/realms/codestra"
+    },
+    "role_mapping": {
+      "observability-admin": "GrafanaAdmin",
+      "observability-operator": "Editor",
+      "observability-viewer": "Viewer",
+      "no_matching_role": "login denied (role_attribute_strict)"
+    },
+    "findings": [
+      "allow_assign_grafana_admin=true grants GrafanaAdmin from the realm role observability-admin; acceptable only while that realm role is owner-controlled in appolon1908-hue/Keycloak",
+      "allow_sign_up=true auto-provisions any realm user who carries a mapped role; role_attribute_strict denies everyone else",
+      "data_source_proxy_whitelist lists prometheus:9090 loki-query:3100 tempo:3200 alertmanager:9093 and not middleware-integration-api:8095; the Infinity datasource is a backend plugin (not the /api/datasources/proxy path) so the whitelist does not gate it - confirm at activation",
+      "content_security_policy_template keeps Grafana's default 'unsafe-eval'/'unsafe-inline' script sources",
+      "The Keycloak client grafana-observability and the three observability-* realm roles must exist in appolon1908-hue/Keycloak; Lane E did not verify the Keycloak side",
+      "rbac-policy.json status POLICY_PREPARED_NOT_APPLIED; unified alerting, snapshots and public dashboards disabled"
+    ],
+    "changed_by_lane_e": false,
+    "production_login_changed": false
+  }
+}
