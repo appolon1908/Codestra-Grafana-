@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "component": "grafana",
-  "codestra_repository": "appolon1908-hue/Codestra-Grafana-",
+  "codestra_repository": "ingtrader21-spec/Codestra-Grafana-",
   "upstream_repository": "grafana/grafana",
   "upstream_clone_url": "https://github.com/grafana/grafana.git",
   "upstream_ref": "main",

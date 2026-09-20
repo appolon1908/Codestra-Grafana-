@@ -7,8 +7,8 @@
   "publicUrl": "https://graf.codestra.media/",
   "hostBind": "127.0.0.1:3000",
   "publicNativePortAllowed": false,
-  "edgeRepository": "appolon1908-hue/Caddy",
-  "identityRepository": "appolon1908-hue/Keycloak",
+  "edgeRepository": "ingtrader21-spec/Caddy",
+  "identityRepository": "ingtrader21-spec/Keycloak",
   "database": {
     "type": "postgres",
     "highAvailability": true,
