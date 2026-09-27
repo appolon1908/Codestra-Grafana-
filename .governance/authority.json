@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "repository": "Codestra-Grafana-",
+  "repository_url": "https://github.com/ingtrader21-spec/Codestra-Grafana-.git",
+  "active_branch": "governance/single-active-lane-20260926",
+  "base_branch": "main",
+  "base_sha": "0d01d15d474ce19ad13396574223377769367f0f",
+  "upstream_ref": "origin/main",
+  "publication_branch": "governance/single-active-lane-20260926",
+  "development_workstation": "codestra-desktop",
+  "publication_workstation": "Appolon",
+  "allow_production_effects": false,
+  "allow_force_push": false,
+  "canonical_worktree": "/home/codestra/Worktrees/Monitoring-Active-20260926/Codestra-Grafana-",
+  "updated_at": "2026-09-26T16:37:20.663792+00:00"
+}
