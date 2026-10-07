@@ -1,0 +1,32 @@
+name: Codestra Candidate CD
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: codestra-candidate-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  certify-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Baseline certification
+        run: ./scripts/codestra-ci.sh all
+      - name: Build local immutable candidate when Dockerfile exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f Dockerfile ]; then docker build --pull=false --tag "codestra-candidate:${GITHUB_SHA}" .; else echo 'No root Dockerfile; repository-specific packaging remains authoritative.'; fi
+      - name: Emit release evidence
+        shell: bash
+        run: |
+          printf '{"repository":"%s","sha":"%s","ref":"%s","production_deployed":false}\n' "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$GITHUB_REF" > release-evidence.json
+          cat release-evidence.json
+      - name: Production remains gated
+        run: echo 'Candidate certified only. Production activation requires explicit governed approval.'
