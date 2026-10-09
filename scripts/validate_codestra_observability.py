@@ -214,7 +214,7 @@ def validate_registry() -> dict[str, Any]:
         for application in repositories:
             if application.get("profile") not in {"frontend", "backend", "fullstack"}:
                 fail(f"invalid application profile for {application.get('repo')}")
-            if not application.get("repo", "").startswith("appolon1908-hue/"):
+            if not application.get("repo", "").startswith("ingtrader21-spec/"):
                 fail(f"unowned repository in registry: {application.get('repo')}")
             repos.append(application["repo"])
             services.append(application["service"])

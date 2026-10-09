@@ -60,7 +60,7 @@ services:
     labels:
       com.codestra.service: grafana
       com.codestra.environment: staging
-      com.codestra.source.repository: appolon1908-hue/Codestra-Grafana-
+      com.codestra.source.repository: ingtrader21-spec/Codestra-Grafana-
       com.codestra.source.sha: ${GRAFANA_SOURCE_SHA:?exact merged source SHA is required}
 
 networks:
