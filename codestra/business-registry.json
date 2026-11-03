@@ -22,8 +22,8 @@
       "team": "codestra-business-codestra",
       "service_tier": "tier_1",
       "repositories": [
-        {"repo": "appolon1908-hue/codestra", "service": "codestra-web", "profile": "frontend"},
-        {"repo": "appolon1908-hue/codestra-backend", "service": "codestra-backend", "profile": "backend"}
+        {"repo": "ingtrader21-spec/codestra", "service": "codestra-web", "profile": "frontend"},
+        {"repo": "ingtrader21-spec/codestra-backend", "service": "codestra-backend", "profile": "backend"}
       ]
     },
     {
@@ -32,8 +32,8 @@
       "team": "codestra-business-moneybee",
       "service_tier": "tier_1",
       "repositories": [
-        {"repo": "appolon1908-hue/Moneybee-frontend-", "service": "moneybee-frontend", "profile": "frontend"},
-        {"repo": "appolon1908-hue/Moneybee-Backend", "service": "moneybee-backend", "profile": "backend"}
+        {"repo": "ingtrader21-spec/Moneybee-frontend-", "service": "moneybee-frontend", "profile": "frontend"},
+        {"repo": "ingtrader21-spec/Moneybee-Backend", "service": "moneybee-backend", "profile": "backend"}
       ]
     },
     {
@@ -43,8 +43,8 @@
       "service_tier": "tier_1",
       "criticality": "financial-trading",
       "repositories": [
-        {"repo": "appolon1908-hue/beyvra-frontend", "service": "beyvra-frontend", "profile": "frontend"},
-        {"repo": "appolon1908-hue/beyvra-backend", "service": "beyvra-backend", "profile": "backend"}
+        {"repo": "ingtrader21-spec/beyvra-frontend", "service": "beyvra-frontend", "profile": "frontend"},
+        {"repo": "ingtrader21-spec/beyvra-backend", "service": "beyvra-backend", "profile": "backend"}
       ]
     },
     {
@@ -53,7 +53,7 @@
       "team": "codestra-business-breero",
       "service_tier": "tier_1",
       "repositories": [
-        {"repo": "appolon1908-hue/Breero.com", "service": "breero-backend", "profile": "fullstack"}
+        {"repo": "ingtrader21-spec/Breero.com", "service": "breero-backend", "profile": "fullstack"}
       ]
     },
     {
@@ -63,7 +63,7 @@
       "service_tier": "tier_1",
       "repositories": [
         {"repo": "appolon1908-hue/LARIM-A-Fornt-end", "service": "larim-a-frontend", "profile": "frontend"},
-        {"repo": "appolon1908-hue/LARIM-A-Backend", "service": "larim-a-backend", "profile": "backend"}
+        {"repo": "ingtrader21-spec/LARIM-A-Backend", "service": "larim-a-backend", "profile": "backend"}
       ]
     },
     {
@@ -82,7 +82,7 @@
       "team": "codestra-business-booked4seasons",
       "service_tier": "tier_2",
       "repositories": [
-        {"repo": "appolon1908-hue/booked4seasons", "service": "booked4seasons-backend", "profile": "fullstack"}
+        {"repo": "ingtrader21-spec/booked4seasons", "service": "booked4seasons-backend", "profile": "fullstack"}
       ]
     },
     {
@@ -91,7 +91,7 @@
       "team": "codestra-business-social",
       "service_tier": "tier_2",
       "repositories": [
-        {"repo": "appolon1908-hue/social.codestra.co", "service": "social-codestra", "profile": "fullstack"}
+        {"repo": "ingtrader21-spec/social.codestra.co", "service": "social-codestra", "profile": "fullstack"}
       ]
     },
     {
@@ -100,8 +100,8 @@
       "team": "codestra-business-klyrow",
       "service_tier": "tier_1",
       "repositories": [
-        {"repo": "appolon1908-hue/klyrow-Website-", "service": "klyrow-web", "profile": "frontend"},
-        {"repo": "appolon1908-hue/klyrow.com", "service": "klyrow-gateway", "profile": "backend"}
+        {"repo": "ingtrader21-spec/klyrow-Website-", "service": "klyrow-web", "profile": "frontend"},
+        {"repo": "ingtrader21-spec/klyrow.com", "service": "klyrow-gateway", "profile": "backend"}
       ]
     },
     {
@@ -110,8 +110,8 @@
       "team": "codestra-business-telnexa",
       "service_tier": "tier_1",
       "repositories": [
-        {"repo": "appolon1908-hue/Telnexa-web", "service": "telnexa-web", "profile": "frontend"},
-        {"repo": "appolon1908-hue/telnexa", "service": "telnexa-gateway", "profile": "backend"}
+        {"repo": "ingtrader21-spec/Telnexa-web", "service": "telnexa-web", "profile": "frontend"},
+        {"repo": "ingtrader21-spec/telnexa", "service": "telnexa-gateway", "profile": "backend"}
       ]
     },
     {
@@ -120,7 +120,7 @@
       "team": "codestra-business-kyqra",
       "service_tier": "tier_2",
       "repositories": [
-        {"repo": "appolon1908-hue/kyqra-crawler", "service": "kyqra-crawler", "profile": "backend"}
+        {"repo": "ingtrader21-spec/kyqra-crawler", "service": "kyqra-crawler", "profile": "backend"}
       ]
     },
     {
@@ -138,38 +138,38 @@
       "team": "codestra-business-provisioning",
       "service_tier": "tier_1",
       "repositories": [
-        {"repo": "appolon1908-hue/codestra-provisioning-service", "service": "provisioning-api", "profile": "backend"}
+        {"repo": "ingtrader21-spec/codestra-provisioning-service", "service": "provisioning-api", "profile": "backend"}
       ]
     }
   ],
   "platform_services": [
-    {"repo": "appolon1908-hue/Caddy", "service": "caddy", "domain": "edge"},
-    {"repo": "appolon1908-hue/Kong", "service": "kong", "domain": "api-gateway"},
-    {"repo": "appolon1908-hue/Keycloak", "service": "keycloak", "domain": "identity"},
-    {"repo": "appolon1908-hue/Middleware-", "service": "middleware", "domain": "control-plane"},
-    {"repo": "appolon1908-hue/Odoo", "service": "odoo", "domain": "crm"},
-    {"repo": "appolon1908-hue/N8N", "service": "n8n", "domain": "orchestration"},
-    {"repo": "appolon1908-hue/Vicidialer-Codestra", "service": "vicidial", "domain": "voice"},
-    {"repo": "appolon1908-hue/Codestra-Prometheus", "service": "prometheus", "domain": "metrics"},
-    {"repo": "appolon1908-hue/Codestra-Loki", "service": "loki", "domain": "logs"},
-    {"repo": "appolon1908-hue/Codestra-Tempo", "service": "tempo", "domain": "traces"},
-    {"repo": "appolon1908-hue/Codestra-Grafana-", "service": "grafana", "domain": "observability-ui"},
-    {"repo": "appolon1908-hue/Codestra-Telemetry", "service": "opentelemetry-collector", "domain": "telemetry-gateway"},
-    {"repo": "appolon1908-hue/Codestra-Alloy", "service": "alloy", "domain": "telemetry-agent"},
-    {"repo": "appolon1908-hue/Codestra-Node-Exporter", "service": "node-exporter", "domain": "host-metrics"},
-    {"repo": "appolon1908-hue/Codestra-cAdvisor", "service": "cadvisor", "domain": "container-metrics"},
-    {"repo": "appolon1908-hue/Codestra-Redis-Exporter", "service": "redis-exporter", "domain": "redis-metrics"},
-    {"repo": "appolon1908-hue/Codestra-Blackbox-Exporter", "service": "blackbox-exporter", "domain": "synthetic-monitoring"},
-    {"repo": "appolon1908-hue/Superset", "service": "superset", "domain": "business-intelligence"},
-    {"repo": "appolon1908-hue/Codestra-OpenBao", "service": "openbao", "domain": "secrets-pki"}
+    {"repo": "ingtrader21-spec/Caddy", "service": "caddy", "domain": "edge"},
+    {"repo": "ingtrader21-spec/Kong", "service": "kong", "domain": "api-gateway"},
+    {"repo": "ingtrader21-spec/Keycloak", "service": "keycloak", "domain": "identity"},
+    {"repo": "ingtrader21-spec/Middleware-", "service": "middleware", "domain": "control-plane"},
+    {"repo": "ingtrader21-spec/Odoo", "service": "odoo", "domain": "crm"},
+    {"repo": "ingtrader21-spec/N8N", "service": "n8n", "domain": "orchestration"},
+    {"repo": "ingtrader21-spec/Vicidialer-Codestra", "service": "vicidial", "domain": "voice"},
+    {"repo": "ingtrader21-spec/Codestra-Prometheus", "service": "prometheus", "domain": "metrics"},
+    {"repo": "ingtrader21-spec/Codestra-Loki", "service": "loki", "domain": "logs"},
+    {"repo": "ingtrader21-spec/Codestra-Tempo", "service": "tempo", "domain": "traces"},
+    {"repo": "ingtrader21-spec/Codestra-Grafana-", "service": "grafana", "domain": "observability-ui"},
+    {"repo": "ingtrader21-spec/Codestra-Telemetry", "service": "opentelemetry-collector", "domain": "telemetry-gateway"},
+    {"repo": "ingtrader21-spec/Codestra-Alloy", "service": "alloy", "domain": "telemetry-agent"},
+    {"repo": "ingtrader21-spec/Codestra-Node-Exporter", "service": "node-exporter", "domain": "host-metrics"},
+    {"repo": "ingtrader21-spec/Codestra-cAdvisor", "service": "cadvisor", "domain": "container-metrics"},
+    {"repo": "ingtrader21-spec/Codestra-Redis-Exporter", "service": "redis-exporter", "domain": "redis-metrics"},
+    {"repo": "ingtrader21-spec/Codestra-Blackbox-Exporter", "service": "blackbox-exporter", "domain": "synthetic-monitoring"},
+    {"repo": "ingtrader21-spec/Superset", "service": "superset", "domain": "business-intelligence"},
+    {"repo": "ingtrader21-spec/Codestra-OpenBao", "service": "openbao", "domain": "secrets-pki"}
   ],
   "non_runtime_or_deferred": [
-    {"repo": "appolon1908-hue/SDK-repository", "reason": "developer contracts and release tooling"},
-    {"repo": "appolon1908-hue/communication-platform-", "reason": "architecture coordination only"},
+    {"repo": "ingtrader21-spec/SDK-repository", "reason": "developer contracts and release tooling"},
+    {"repo": "ingtrader21-spec/communication-platform-", "reason": "architecture coordination only"},
     {"repo": "appolon1908-hue/codestra-production-platform", "reason": "historical or reference deployment evidence"},
-    {"repo": "appolon1908-hue/backend2", "reason": "ownership unresolved"},
-    {"repo": "appolon1908-hue/scrapper", "reason": "legacy scraper; Kyqra is the canonical crawler runtime"},
-    {"repo": "appolon1908-hue/kyqra", "reason": "legacy Kyqra shell or reference"},
+    {"repo": "ingtrader21-spec/backend2", "reason": "ownership unresolved"},
+    {"repo": "ingtrader21-spec/scrapper", "reason": "legacy scraper; Kyqra is the canonical crawler runtime"},
+    {"repo": "ingtrader21-spec/kyqra", "reason": "legacy Kyqra shell or reference"},
     {"repo": "appolon1908-hue/Codestraxxxx", "reason": "placeholder repository"}
   ]
 }

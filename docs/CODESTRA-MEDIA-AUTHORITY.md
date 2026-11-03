@@ -1,6 +1,6 @@
 # Codestra Grafana Authority
 
-Principal repository: `appolon1908-hue/Codestra-Grafana-`
+Principal repository: `ingtrader21-spec/Codestra-Grafana-`
 
 Canonical service host: `graf.codestra.media`
 Canonical DNS target: `37.27.128.39`

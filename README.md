@@ -6,7 +6,7 @@ Principal repository for Codestra Grafana OSS dashboards, datasource provisionin
 
 This repository owns Grafana-specific source only. It does not own Prometheus scrape configuration, Alertmanager routing, Loki storage/configuration, Tempo tracing backend configuration, OpenTelemetry Collector configuration, or business-system runtime source.
 
-Shared observability topology and environment composition are coordinated through `appolon1908-hue/Infustruction-repo`. Communications dashboard information architecture is coordinated through `appolon1908-hue/communication-platform-`.
+Shared observability topology and environment composition are coordinated through `ingtrader21-spec/Infustruction-repo`. Communications dashboard information architecture is coordinated through `ingtrader21-spec/communication-platform-`.
 
 ## Data path
 
@@ -65,7 +65,7 @@ code:
 install -d -o root -g root -m 0755 /opt/codestra-observability
 install -d -o root -g root -m 0700 /opt/codestra-observability/grafana-authority
 git -C /opt/codestra-observability/grafana-authority init
-git -C /opt/codestra-observability/grafana-authority remote add origin https://github.com/appolon1908-hue/Codestra-Grafana-.git
+git -C /opt/codestra-observability/grafana-authority remote add origin https://github.com/ingtrader21-spec/Codestra-Grafana-.git
 git -C /opt/codestra-observability/grafana-authority fetch --no-tags origin refs/heads/main
 git -C /opt/codestra-observability/grafana-authority checkout --detach <accepted-main-sha>
 chown -R root:root /opt/codestra-observability/grafana-authority

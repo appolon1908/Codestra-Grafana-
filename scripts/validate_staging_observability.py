@@ -138,7 +138,7 @@ def main() -> None:
     for required in (
         'SHA40 = re.compile(r"^[0-9a-f]{40}$")',
         'git_output("rev-parse", "HEAD") != source_sha',
-        'CANONICAL_REPOSITORY = "https://github.com/appolon1908-hue/Codestra-Grafana-.git"',
+        'CANONICAL_REPOSITORY = "https://github.com/ingtrader21-spec/Codestra-Grafana-.git"',
         'CANONICAL_MAIN_REF = "refs/remotes/codestra-canonical/main"',
         'f"+refs/heads/main:{CANONICAL_MAIN_REF}"',
         '"merge-base",',
